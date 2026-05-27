@@ -3,7 +3,6 @@ package valkeyhook
 import (
 	"context"
 	"time"
-	"unsafe"
 
 	"github.com/valkey-io/valkey-go"
 )
@@ -23,7 +22,8 @@ type Hook interface {
 
 // WithHook wraps valkey.Client with Hook and allows the user to intercept valkey.Client
 func WithHook(client valkey.Client, hook Hook) valkey.Client {
-	return &hookclient{client: client, hook: hook}
+	_ = "STUB: not implemented"
+	return *new(valkey.Client)
 }
 
 type hookclient struct {
@@ -31,64 +31,61 @@ type hookclient struct {
 	hook   Hook
 }
 
-func (c *hookclient) B() valkey.Builder {
-	return c.client.B()
-}
+func (c *hookclient) B() valkey.Builder { _ = "STUB: not implemented"; return *new(valkey.Builder) }
 
 func (c *hookclient) Do(ctx context.Context, cmd valkey.Completed) (resp valkey.ValkeyResult) {
-	return c.hook.Do(c.client, ctx, cmd)
+	_ = "STUB: not implemented"
+	return *new(valkey.ValkeyResult)
 }
 
 func (c *hookclient) DoMulti(ctx context.Context, multi ...valkey.Completed) (resp []valkey.ValkeyResult) {
-	return c.hook.DoMulti(c.client, ctx, multi...)
+	_ = "STUB: not implemented"
+	return nil
 }
 
 func (c *hookclient) DoCache(ctx context.Context, cmd valkey.Cacheable, ttl time.Duration) (resp valkey.ValkeyResult) {
-	return c.hook.DoCache(c.client, ctx, cmd, ttl)
+	_ = "STUB: not implemented"
+	return *new(valkey.ValkeyResult)
 }
 
 func (c *hookclient) DoMultiCache(ctx context.Context, multi ...valkey.CacheableTTL) (resps []valkey.ValkeyResult) {
-	return c.hook.DoMultiCache(c.client, ctx, multi...)
+	_ = "STUB: not implemented"
+	return nil
 }
 
 func (c *hookclient) DoStream(ctx context.Context, cmd valkey.Completed) valkey.ValkeyResultStream {
-	return c.hook.DoStream(c.client, ctx, cmd)
+	_ = "STUB: not implemented"
+	return *new(valkey.ValkeyResultStream)
 }
 
 func (c *hookclient) DoMultiStream(ctx context.Context, multi ...valkey.Completed) valkey.MultiValkeyResultStream {
-	return c.hook.DoMultiStream(c.client, ctx, multi...)
+	_ = "STUB: not implemented"
+	return *new(valkey.MultiValkeyResultStream)
 }
 
 func (c *hookclient) Dedicated(fn func(valkey.DedicatedClient) error) (err error) {
-	return c.client.Dedicated(func(client valkey.DedicatedClient) error {
-		return fn(&dedicated{client: &extended{DedicatedClient: client}, hook: c.hook})
-	})
+	_ = "STUB: not implemented"
+	return nil
 }
 
 func (c *hookclient) Dedicate() (valkey.DedicatedClient, func()) {
-	client, cancel := c.client.Dedicate()
-	return &dedicated{client: &extended{DedicatedClient: client}, hook: c.hook}, cancel
+	_ = "STUB: not implemented"
+	return *new(valkey.DedicatedClient), nil
 }
 
 func (c *hookclient) Receive(ctx context.Context, subscribe valkey.Completed, fn func(msg valkey.PubSubMessage)) (err error) {
-	return c.hook.Receive(c.client, ctx, subscribe, fn)
+	_ = "STUB: not implemented"
+	return nil
 }
 
-func (c *hookclient) Nodes() map[string]valkey.Client {
-	nodes := c.client.Nodes()
-	for addr, client := range nodes {
-		nodes[addr] = &hookclient{client: client, hook: c.hook}
-	}
-	return nodes
-}
+func (c *hookclient) Nodes() map[string]valkey.Client { _ = "STUB: not implemented"; return nil }
 
 func (c *hookclient) Mode() valkey.ClientMode {
-	return c.client.Mode()
+	_ = "STUB: not implemented"
+	return *new(valkey.ClientMode)
 }
 
-func (c *hookclient) Close() {
-	c.client.Close()
-}
+func (c *hookclient) Close() { _ = "STUB: not implemented"; return }
 
 var _ valkey.DedicatedClient = (*dedicated)(nil)
 
@@ -97,33 +94,34 @@ type dedicated struct {
 	hook   Hook
 }
 
-func (d *dedicated) B() valkey.Builder {
-	return d.client.B()
-}
+func (d *dedicated) B() valkey.Builder { _ = "STUB: not implemented"; return *new(valkey.Builder) }
 
 func (d *dedicated) Do(ctx context.Context, cmd valkey.Completed) (resp valkey.ValkeyResult) {
-	return d.hook.Do(d.client, ctx, cmd)
+	_ = "STUB: not implemented"
+	return *new(valkey.ValkeyResult)
 }
 
 func (d *dedicated) DoMulti(ctx context.Context, multi ...valkey.Completed) (resp []valkey.ValkeyResult) {
-	return d.hook.DoMulti(d.client, ctx, multi...)
+	_ = "STUB: not implemented"
+	return nil
 }
 
 func (d *dedicated) Receive(ctx context.Context, subscribe valkey.Completed, fn func(msg valkey.PubSubMessage)) (err error) {
-	return d.hook.Receive(d.client, ctx, subscribe, fn)
+	_ = "STUB: not implemented"
+	return nil
 }
 
 func (d *dedicated) SetPubSubHooks(hooks valkey.PubSubHooks) <-chan error {
-	return d.client.SetPubSubHooks(hooks)
+	_ = "STUB: not implemented"
+	return nil
 }
 
 func (d *dedicated) SetOnInvalidations(fn func([]valkey.ValkeyMessage)) <-chan error {
-	return d.client.SetOnInvalidations(fn)
+	_ = "STUB: not implemented"
+	return nil
 }
 
-func (d *dedicated) Close() {
-	d.client.Close()
-}
+func (d *dedicated) Close() { _ = "STUB: not implemented"; return }
 
 var _ valkey.Client = (*extended)(nil)
 
@@ -132,34 +130,40 @@ type extended struct {
 }
 
 func (e *extended) DoCache(ctx context.Context, cmd valkey.Cacheable, ttl time.Duration) (resp valkey.ValkeyResult) {
-	panic("DoCache() is not allowed with valkey.DedicatedClient")
+	_ = "STUB: not implemented"
+	return *new(valkey.ValkeyResult)
 }
 
 func (e *extended) DoMultiCache(ctx context.Context, multi ...valkey.CacheableTTL) (resp []valkey.ValkeyResult) {
-	panic("DoMultiCache() is not allowed with valkey.DedicatedClient")
+	_ = "STUB: not implemented"
+	return nil
 }
+
 func (c *extended) DoStream(ctx context.Context, cmd valkey.Completed) valkey.ValkeyResultStream {
-	panic("DoStream() is not allowed with valkey.DedicatedClient")
+	_ = "STUB: not implemented"
+	return *new(valkey.ValkeyResultStream)
 }
 
 func (c *extended) DoMultiStream(ctx context.Context, multi ...valkey.Completed) valkey.MultiValkeyResultStream {
-	panic("DoMultiStream() is not allowed with valkey.DedicatedClient")
+	_ = "STUB: not implemented"
+	return *new(valkey.MultiValkeyResultStream)
 }
 
 func (e *extended) Dedicated(fn func(valkey.DedicatedClient) error) (err error) {
-	panic("Dedicated() is not allowed with valkey.DedicatedClient")
+	_ = "STUB: not implemented"
+	return nil
 }
 
 func (e *extended) Dedicate() (client valkey.DedicatedClient, cancel func()) {
-	panic("Dedicate() is not allowed with valkey.DedicatedClient")
+	_ = "STUB: not implemented"
+	return *new(valkey.DedicatedClient), nil
 }
 
-func (e *extended) Nodes() map[string]valkey.Client {
-	panic("Nodes() is not allowed with valkey.DedicatedClient")
-}
+func (e *extended) Nodes() map[string]valkey.Client { _ = "STUB: not implemented"; return nil }
 
 func (e *extended) Mode() valkey.ClientMode {
-	panic("Mode() is not allowed with valkey.DedicatedClient")
+	_ = "STUB: not implemented"
+	return *new(valkey.ClientMode)
 }
 
 type result struct {
@@ -168,8 +172,8 @@ type result struct {
 }
 
 func NewErrorResult(err error) valkey.ValkeyResult {
-	r := result{err: err}
-	return *(*valkey.ValkeyResult)(unsafe.Pointer(&r))
+	_ = "STUB: not implemented"
+	return *new(valkey.ValkeyResult)
 }
 
 type stream struct {
@@ -180,6 +184,6 @@ type stream struct {
 }
 
 func NewErrorResultStream(err error) valkey.ValkeyResultStream {
-	r := stream{e: err}
-	return *(*valkey.ValkeyResultStream)(unsafe.Pointer(&r))
+	_ = "STUB: not implemented"
+	return *new(valkey.ValkeyResultStream)
 }

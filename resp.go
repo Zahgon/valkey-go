@@ -3,13 +3,8 @@ package valkey
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"io"
-	"math"
-	"strconv"
-	"strings"
 	"sync"
-	"unsafe"
 )
 
 var errChunked = errors.New("unbounded valkey message")
@@ -78,312 +73,95 @@ func init() {
 }
 
 func readSimpleString(i *bufio.Reader) (m ValkeyMessage, err error) {
-	m.bytes, m.intlen, err = readS(i)
-	return
+	_ = "STUB: not implemented"
+	return *new(ValkeyMessage), nil
 }
 
 func readBlobString(i *bufio.Reader) (m ValkeyMessage, err error) {
-	m.bytes, m.intlen, err = readB(i)
-	if err == errChunked {
-		sb := strings.Builder{}
-		for {
-			if _, err = i.Discard(1); err != nil { // discard the ';'
-				return ValkeyMessage{}, err
-			}
-			length, err := readI(i)
-			if err != nil {
-				return ValkeyMessage{}, err
-			}
-			if length == 0 {
-				m.setString(sb.String())
-				return m, nil
-			}
-			sb.Grow(int(length))
-			if _, err = io.CopyN(&sb, i, length); err != nil {
-				return ValkeyMessage{}, err
-			}
-			if _, err = i.Discard(2); err != nil {
-				return ValkeyMessage{}, err
-			}
-		}
-	}
-	return
+	_ = "STUB: not implemented"
+	return *new(ValkeyMessage), nil
 }
 
+// discard the ';'
+
 func readInteger(i *bufio.Reader) (m ValkeyMessage, err error) {
-	m.intlen, err = readI(i)
-	return
+	_ = "STUB: not implemented"
+	return *new(ValkeyMessage), nil
 }
 
 func readBoolean(i *bufio.Reader) (m ValkeyMessage, err error) {
-	b, err := i.ReadByte()
-	if err != nil {
-		return ValkeyMessage{}, err
-	}
-	if b == 't' {
-		m.intlen = 1
-	}
-	_, err = i.Discard(2)
-	return
+	_ = "STUB: not implemented"
+	return *new(ValkeyMessage), nil
 }
 
 func readNull(i *bufio.Reader) (m ValkeyMessage, err error) {
-	_, err = i.Discard(2)
-	return
+	_ = "STUB: not implemented"
+	return *new(ValkeyMessage), nil
 }
 
 func readArray(i *bufio.Reader) (m ValkeyMessage, err error) {
-	length, err := readI(i)
-	if err == nil {
-		if length == -1 {
-			return m, errOldNull
-		}
-		m.array, m.intlen, err = readA(i, length)
-	} else if err == errChunked {
-		m.array, m.intlen, err = readE(i)
-	}
-	return m, err
+	_ = "STUB: not implemented"
+	return *new(ValkeyMessage), nil
 }
 
 func readMap(i *bufio.Reader) (m ValkeyMessage, err error) {
-	length, err := readI(i)
-	if err == nil {
-		m.array, m.intlen, err = readA(i, length*2)
-	} else if err == errChunked {
-		m.array, m.intlen, err = readE(i)
-	}
-	return m, err
+	_ = "STUB: not implemented"
+	return *new(ValkeyMessage), nil
 }
 
 const ok = "OK"
 const okrn = "OK\r\n"
 
-func readS(i *bufio.Reader) (*byte, int64, error) {
-	if peek, _ := i.Peek(2); string(peek) == ok {
-		if peek, _ = i.Peek(4); string(peek) == okrn {
-			_, _ = i.Discard(4)
-			return unsafe.StringData(ok), int64(len(ok)), nil
-		}
-	}
-	bs, err := i.ReadBytes('\n')
-	if err != nil {
-		return nil, 0, err
-	}
-	if trim := len(bs) - 2; trim < 0 {
-		return nil, 0, errors.New(unexpectedNoCRLF)
-	} else {
-		bs = bs[:trim]
-	}
-	return unsafe.SliceData(bs), int64(len(bs)), nil
-}
+func readS(i *bufio.Reader) (*byte, int64, error) { _ = "STUB: not implemented"; return nil, 0, nil }
 
-func readI(i *bufio.Reader) (v int64, err error) {
-	bs, err := i.ReadSlice('\n')
-	if err != nil {
-		return 0, err
-	}
-	if len(bs) < 3 {
-		return 0, errors.New(unexpectedNoCRLF)
-	}
-	if bs[0] == '?' {
-		return 0, errChunked
-	}
-	var s = int64(1)
-	if bs[0] == '-' {
-		s = -1
-		bs = bs[1:]
-	}
-	for _, c := range bs[:len(bs)-2] {
-		if d := int64(c - '0'); d >= 0 && d <= 9 {
-			v = v*10 + d
-		} else {
-			return 0, errors.New(unexpectedNumByte + strconv.Itoa(int(c)))
-		}
-	}
-	return v * s, nil
-}
+func readI(i *bufio.Reader) (v int64, err error) { _ = "STUB: not implemented"; return 0, nil }
 
-func readB(i *bufio.Reader) (*byte, int64, error) {
-	length, err := readI(i)
-	if err != nil {
-		return nil, 0, err
-	}
-	if length == -1 {
-		return nil, 0, errOldNull
-	}
-	bs := make([]byte, length)
-	if _, err = io.ReadFull(i, bs); err != nil {
-		return nil, 0, err
-	}
-	if _, err = i.Discard(2); err != nil {
-		return nil, 0, err
-	}
-	return unsafe.SliceData(bs), int64(len(bs)), nil
-}
+func readB(i *bufio.Reader) (*byte, int64, error) { _ = "STUB: not implemented"; return nil, 0, nil }
 
 func readE(i *bufio.Reader) (*ValkeyMessage, int64, error) {
-	v := make([]ValkeyMessage, 0)
-	for {
-		n, err := readNextMessage(i)
-		if err != nil {
-			return nil, 0, err
-		}
-		if n.typ == '.' {
-			return unsafe.SliceData(v), int64(len(v)), err
-		}
-		v = append(v, n)
-	}
+	_ = "STUB: not implemented"
+	return nil, 0, nil
 }
 
 func readA(i *bufio.Reader, length int64) (*ValkeyMessage, int64, error) {
-	var err error
-
-	msgs := make([]ValkeyMessage, length)
-	for n := range length {
-		if msgs[n], err = readNextMessage(i); err != nil {
-			return nil, 0, err
-		}
-	}
-	return unsafe.SliceData(msgs), length, nil
+	_ = "STUB: not implemented"
+	return nil, 0, nil
 }
 
 func writeB(o *bufio.Writer, id byte, str string) (err error) {
-	_ = writeN(o, id, len(str))
-	_, _ = o.WriteString(str)
-	_, err = o.WriteString("\r\n")
-	return err
+	_ = "STUB: not implemented"
+	return nil
 }
 
 func writeS(o *bufio.Writer, id byte, str string) (err error) {
-	_ = o.WriteByte(id)
-	_, _ = o.WriteString(str)
-	_, err = o.WriteString("\r\n")
-	return err
+	_ = "STUB: not implemented"
+	return nil
 }
 
-func writeN(o *bufio.Writer, id byte, n int) (err error) {
-	_ = o.WriteByte(id)
-	if n < 10 {
-		_ = o.WriteByte(byte('0' + n))
-	} else {
-		for d := int(math.Pow10(int(math.Log10(float64(n))))); d > 0; d /= 10 {
-			_ = o.WriteByte(byte('0' + n/d))
-			n = n % d
-		}
-	}
-	_, err = o.WriteString("\r\n")
-	return err
-}
+func writeN(o *bufio.Writer, id byte, n int) (err error) { _ = "STUB: not implemented"; return nil }
 
 func readNextMessage(i *bufio.Reader) (m ValkeyMessage, err error) {
-	var attrs *ValkeyMessage
-	var typ byte
-	for {
-		if typ, err = i.ReadByte(); err != nil {
-			return ValkeyMessage{}, err
-		}
-		fn := readers[typ]
-		if fn == nil {
-			return ValkeyMessage{}, errors.New(unknownMessageType + strconv.Itoa(int(typ)))
-		}
-		if m, err = fn(i); err != nil {
-			if err == errOldNull {
-				return ValkeyMessage{typ: typeNull}, nil
-			}
-			return ValkeyMessage{}, err
-		}
-		m.typ = typ
-		if m.typ == typeAttribute { // handle the attributes
-			a := m     // clone the original m first, and then take the address of the clone
-			attrs = &a // to avoid go compiler allocating the m on heap which causing worse performance.
-			m = ValkeyMessage{}
-			continue
-		}
-		m.attrs = attrs
-		return m, nil
-	}
+	_ = "STUB: not implemented"
+	return *new(ValkeyMessage), nil
 }
+
+// handle the attributes
+// clone the original m first, and then take the address of the clone
+// to avoid go compiler allocating the m on heap which causing worse performance.
 
 var lrs = sync.Pool{New: func() any { return &io.LimitedReader{} }}
 
 func streamTo(i *bufio.Reader, w io.Writer) (n int64, err error, clean bool) {
-next:
-	var typ byte
-	if typ, err = i.ReadByte(); err != nil {
-		return 0, err, false
-	}
-	switch typ {
-	case typeBlobString, typeVerbatimString, typeChunk:
-		if n, err = readI(i); err != nil {
-			if err == errChunked {
-				var nn int64
-				nn, err, clean = streamTo(i, w)
-				for n += nn; nn != 0 && clean && err == nil; n += nn {
-					nn, err, clean = streamTo(i, w)
-				}
-			}
-			return n, err, clean
-		}
-		if n == -1 {
-			return 0, Nil, true
-		}
-		full := n + 2
-		if n != 0 {
-			lr := lrs.Get().(*io.LimitedReader)
-			lr.R = i
-			lr.N = n
-			n, err = io.Copy(w, lr)
-			lr.R = nil
-			lrs.Put(lr)
-		} else if typ == typeChunk {
-			return n, err, true
-		}
-		if _, err2 := i.Discard(int(full - n)); err2 == nil {
-			clean = true
-		} else if err == nil {
-			err = err2
-		}
-		return n, err, clean
-	default:
-		_ = i.UnreadByte()
-		m, err := readNextMessage(i)
-		if err != nil {
-			return 0, err, false
-		}
-		switch m.typ {
-		case typeSimpleString, typeFloat, typeBigNumber:
-			n, err := w.Write([]byte(m.string()))
-			return int64(n), err, true
-		case typeNull:
-			return 0, Nil, true
-		case typeSimpleErr, typeBlobErr:
-			mm := m
-			return 0, (*ValkeyError)(&mm), true
-		case typeInteger, typeBool:
-			n, err := w.Write([]byte(strconv.FormatInt(m.intlen, 10)))
-			return int64(n), err, true
-		case typePush:
-			goto next
-		default:
-			return 0, fmt.Errorf("unsupported valkey %q response for streaming read", typeNames[typ]), true
-		}
-	}
+	_ = "STUB: not implemented"
+	return 0, nil, false
 }
 
-func writeCmd(o *bufio.Writer, cmd []string) (err error) {
-	err = writeN(o, '*', len(cmd))
-	for _, m := range cmd {
-		err = writeB(o, '$', m)
-		// TODO: Can we set cmd[i] = "" here to allow GC to eagerly recycle memory?
-		// Related: https://github.com/redis/rueidis/issues/364
-	}
-	return err
-}
+func writeCmd(o *bufio.Writer, cmd []string) (err error) { _ = "STUB: not implemented"; return nil }
 
-func flushCmd(o *bufio.Writer, cmd []string) (err error) {
-	_ = writeCmd(o, cmd)
-	return o.Flush()
-}
+// TODO: Can we set cmd[i] = "" here to allow GC to eagerly recycle memory?
+// Related: https://github.com/redis/rueidis/issues/364
+
+func flushCmd(o *bufio.Writer, cmd []string) (err error) { _ = "STUB: not implemented"; return nil }
 
 const (
 	unexpectedNoCRLF   = "received unexpected simple string message ending without CRLF"

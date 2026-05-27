@@ -56,7 +56,8 @@ type SimpleCache interface {
 
 // NewSimpleCacheAdapter converts a SimpleCache into CacheStore
 func NewSimpleCacheAdapter(store SimpleCache) CacheStore {
-	return &adapter{store: store, flights: make(map[string]map[string]CacheEntry)}
+	_ = "STUB: not implemented"
+	return *new(CacheStore)
 }
 
 type adapter struct {
@@ -66,97 +67,22 @@ type adapter struct {
 }
 
 func (a *adapter) Flight(key, cmd string, ttl time.Duration, now time.Time) (ValkeyMessage, CacheEntry) {
-	a.mu.RLock()
-	if v := a.store.Get(key + cmd); v.typ != 0 && v.relativePTTL(now) > 0 {
-		a.mu.RUnlock()
-		return v, nil
-	}
-	flight := a.flights[key][cmd]
-	a.mu.RUnlock()
-	if flight != nil {
-		return ValkeyMessage{}, flight
-	}
-	a.mu.Lock()
-	entries := a.flights[key]
-	if entries == nil && a.flights != nil {
-		entries = make(map[string]CacheEntry, 1)
-		a.flights[key] = entries
-	}
-	if flight = entries[cmd]; flight == nil && entries != nil {
-		entries[cmd] = &adapterEntry{ch: make(chan struct{}), xat: now.Add(ttl).UnixMilli()}
-	}
-	a.mu.Unlock()
-	return ValkeyMessage{}, flight
+	_ = "STUB: not implemented"
+	return *new(ValkeyMessage), *new(CacheEntry)
 }
 
 func (a *adapter) Update(key, cmd string, val ValkeyMessage) (sxat int64) {
-	a.mu.Lock()
-	entries := a.flights[key]
-	if flight, ok := entries[cmd].(*adapterEntry); ok {
-		sxat = val.getExpireAt()
-		if flight.xat < sxat || sxat == 0 {
-			sxat = flight.xat
-			val.setExpireAt(sxat)
-		}
-		a.store.Set(key+cmd, val)
-		flight.set(val, nil)
-		entries[cmd] = nil
-	}
-	a.mu.Unlock()
-	return
+	_ = "STUB: not implemented"
+	return 0
 }
 
-func (a *adapter) Cancel(key, cmd string, err error) {
-	a.mu.Lock()
-	entries := a.flights[key]
-	if flight, ok := entries[cmd].(*adapterEntry); ok {
-		flight.set(ValkeyMessage{}, err)
-		entries[cmd] = nil
-	}
-	a.mu.Unlock()
-}
+func (a *adapter) Cancel(key, cmd string, err error) { _ = "STUB: not implemented"; return }
 
-func (a *adapter) del(key string) {
-	entries := a.flights[key]
-	for cmd, e := range entries {
-		if e == nil {
-			a.store.Del(key + cmd)
-			delete(entries, cmd)
-		}
-	}
-	if len(entries) == 0 {
-		delete(a.flights, key)
-	}
-}
+func (a *adapter) del(key string) { _ = "STUB: not implemented"; return }
 
-func (a *adapter) Delete(keys []ValkeyMessage) {
-	a.mu.Lock()
-	if keys == nil {
-		for key := range a.flights {
-			a.del(key)
-		}
-	} else {
-		for _, k := range keys {
-			a.del(k.string())
-		}
-	}
-	a.mu.Unlock()
-}
+func (a *adapter) Delete(keys []ValkeyMessage) { _ = "STUB: not implemented"; return }
 
-func (a *adapter) Close(err error) {
-	a.mu.Lock()
-	flights := a.flights
-	a.flights = nil
-	a.store.Flush()
-	a.mu.Unlock()
-	for _, entries := range flights {
-		for _, e := range entries {
-			if e != nil {
-				e.(*adapterEntry).set(ValkeyMessage{}, err)
-			}
-		}
-	}
-}
+func (a *adapter) Close(err error) { _ = "STUB: not implemented"; return }
 
 type adapterEntry struct {
 	err error
@@ -165,16 +91,9 @@ type adapterEntry struct {
 	xat int64
 }
 
-func (a *adapterEntry) set(val ValkeyMessage, err error) {
-	a.err, a.val = err, val
-	close(a.ch)
-}
+func (a *adapterEntry) set(val ValkeyMessage, err error) { _ = "STUB: not implemented"; return }
 
 func (a *adapterEntry) Wait(ctx context.Context) (ValkeyMessage, error) {
-	select {
-	case <-ctx.Done():
-		return ValkeyMessage{}, ctx.Err()
-	case <-a.ch:
-		return a.val, a.err
-	}
+	_ = "STUB: not implemented"
+	return *new(ValkeyMessage), nil
 }
